@@ -10,7 +10,26 @@ return [
     
     'api_token' => env('CLOUDFLARE_API_TOKEN', ''),
     
+    // Single zone configuration (backward compatibility)
     'zone_id' => env('CLOUDFLARE_ZONE_ID', ''),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Multi-Zone Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Map domains to Cloudflare zone IDs.
+    | The package will automatically match URLs to the correct zone.
+    |
+    | Example:
+    | 'zones' => [
+    |     'example.com' => 'zone_id_123',
+    |     'example.fr' => 'zone_id_456',
+    | ],
+    */
+    'zones' => [
+        // Domain => Zone ID mapping
+    ],
     
     /*
     |--------------------------------------------------------------------------

@@ -5,10 +5,11 @@ Automatically purge your Cloudflare cache when content changes in Statamic.
 ## Features
 
 - Automatically purges Cloudflare cache when Statamic content changes.
+- **Multi-zone support** for Statamic multisite installations with different domains.
 - Configurable events that trigger cache purging.
 - Optional queuing of purge jobs for background processing.
 - CLI command for manual cache purging.
-- Simple configuration.
+- Simple configuration with backward compatibility.
 
 ## Installation
 
@@ -26,6 +27,8 @@ php artisan vendor:publish --tag="cloudflare-cache-config"
 
 ## Configuration
 
+### Basic Setup (Single Zone)
+
 Add the following environment variables to your `.env` file:
 
 ```
@@ -36,9 +39,30 @@ CLOUDFLARE_CACHE_QUEUE_PURGE=false # Optional: Set to true to dispatch purges to
 CLOUDFLARE_CACHE_DEBUG=false # Optional: Set to true to log API calls
 ```
 
-You can get your API token and Zone ID from the Cloudflare dashboard:
+### Multi-Zone Setup (Multisite)
 
-1. **API Token**: Log in to your Cloudflare dashboard, go to "My Profile" > "API Tokens" and create a token with the "Zone.Cache Purge" permission.
+For Statamic multisite installations with multiple domains, you can configure multiple Cloudflare zones. The package uses a single API token for all zones.
+
+In your `config/cloudflare-cache.php` file, add your zone mappings:
+
+```php
+'zones' => [
+    // Map domains to zone IDs
+    'example.com' => 'zone_id_123',
+    'example.fr' => 'zone_id_456',
+],
+```
+
+The package will automatically detect which zone to use based on the URL being purged. It will:
+1. First try to match the exact domain from the URL
+2. Then try without 'www.' prefix (so 'example.com' will match 'www.example.com')
+3. Fall back to the default `zone_id` if no match is found
+
+### Getting Your Cloudflare Credentials
+
+You can get your API token and Zone IDs from the Cloudflare dashboard:
+
+1. **API Token**: Log in to your Cloudflare dashboard, go to "My Profile" > "API Tokens" and create a token with the "Zone.Cache Purge" permission for all zones you want to manage.
 
 2. **Zone ID**: Go to your domain's overview page in Cloudflare. The Zone ID is displayed in the right sidebar under "API" section.
 
@@ -65,11 +89,17 @@ When enabled, purge operations triggered by events will be dispatched as jobs to
 You can manually purge the cache using the following command:
 
 ```bash
-# Purge all cache
+# Purge all cache (all zones if multi-zone is configured)
 php please cloudflare:purge
 
-# Purge specific URL
+# Purge specific URL (automatically detects the correct zone)
 php please cloudflare:purge --url=https://example.com/specific-page
+
+# Purge specific zone by ID
+php please cloudflare:purge --zone=zone_id_123
+
+# Purge specific domain (requires multi-zone configuration)
+php please cloudflare:purge --domain=example.fr
 ```
 
 ## Advanced Configuration
@@ -83,7 +113,15 @@ return [
     
     // Cloudflare API credentials
     'api_token' => env('CLOUDFLARE_API_TOKEN', ''),
+    
+    // Single zone configuration (backward compatibility)
     'zone_id' => env('CLOUDFLARE_ZONE_ID', ''),
+    
+    // Multi-zone configuration for multisite setups
+    'zones' => [
+        // 'domain.com' => 'zone_id_here',
+        // 'another-domain.com' => 'another_zone_id',
+    ],
     
     // Configure which events trigger cache purging
     'purge_on' => [

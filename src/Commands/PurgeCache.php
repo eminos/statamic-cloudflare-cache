@@ -10,7 +10,10 @@ class PurgeCache extends Command
 {
     use RunsInPlease;
 
-    protected $signature = 'cloudflare:purge {--url= : Specific URL to purge}';
+    protected $signature = 'cloudflare:purge 
+                            {--url= : Specific URL to purge}
+                            {--zone= : Specific zone ID to purge (purges everything in that zone)}
+                            {--domain= : Specific domain to purge (purges everything for that domain)}';
 
     protected $description = 'Purge Cloudflare cache';
 
@@ -30,12 +33,42 @@ class PurgeCache extends Command
         }
 
         $url = $this->option('url');
+        $zoneId = $this->option('zone');
+        $domain = $this->option('domain');
 
+        // Handle specific URL purging
         if ($url) {
             $this->info("Purging cache for URL: {$url}");
             $result = $this->client->purgeUrls([$url]);
-        } else {
-            $this->info('Purging all Cloudflare cache...');
+        }
+        // Handle zone-specific purging
+        elseif ($zoneId) {
+            $this->info("Purging all cache for zone: {$zoneId}");
+            $result = $this->client->purgeEverythingForZone($zoneId);
+        }
+        // Handle domain-specific purging
+        elseif ($domain) {
+            $zones = config('cloudflare-cache.zones', []);
+            $domainZoneId = $zones[$domain] ?? null;
+            
+            if (!$domainZoneId) {
+                $this->error("No zone configured for domain: {$domain}");
+                return 1;
+            }
+            
+            $this->info("Purging all cache for domain: {$domain} (Zone: {$domainZoneId})");
+            $result = $this->client->purgeEverythingForZone($domainZoneId);
+        }
+        // Handle purging everything
+        else {
+            $zones = config('cloudflare-cache.zones', []);
+            
+            if (!empty($zones)) {
+                $this->info('Purging all Cloudflare cache across ' . count(array_unique(array_values($zones))) . ' zone(s)...');
+            } else {
+                $this->info('Purging all Cloudflare cache...');
+            }
+            
             $result = $this->client->purgeEverything();
         }
 
