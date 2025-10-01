@@ -43,6 +43,8 @@ return [
         'term_deleted' => true,
         'asset_saved' => true,
         'asset_deleted' => true,
+        'collection_tree_saved' => true,
+        'nav_tree_saved' => true,
     ],
 
     'queue_purge' => env('CLOUDFLARE_CACHE_QUEUE_PURGE', false), // Dispatch purge jobs to the queue

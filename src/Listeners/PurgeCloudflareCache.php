@@ -11,6 +11,8 @@ use Statamic\Events\TermSaved;
 use Statamic\Events\TermDeleted;
 use Statamic\Events\AssetSaved;
 use Statamic\Events\AssetDeleted;
+use Statamic\Events\CollectionTreeSaved;
+use Statamic\Events\NavTreeSaved;
 use Statamic\Facades\URL;
 use Illuminate\Support\Facades\Log; // Already present, but good to confirm
 
@@ -109,6 +111,8 @@ class PurgeCloudflareCache
             'Statamic\Events\TermDeleted' => 'term_deleted',
             'Statamic\Events\AssetSaved' => 'asset_saved',
             'Statamic\Events\AssetDeleted' => 'asset_deleted',
+            'Statamic\Events\CollectionTreeSaved' => 'collection_tree_saved',
+            'Statamic\Events\NavTreeSaved' => 'nav_tree_saved',
         ];
 
         $configKey = $eventMap[$eventClass] ?? null;
@@ -151,6 +155,22 @@ class PurgeCloudflareCache
             if ($asset && $asset->url()) {
                 $urls[] = URL::makeAbsolute($asset->url());
             }
+        }
+
+        if ($event instanceof CollectionTreeSaved) {
+            $tree = $event->tree;
+            if ($tree && $tree->collection()) {
+                $collection = $tree->collection();
+                if ($collection->url()) {
+                    $urls[] = URL::makeAbsolute($collection->url());
+                }
+            }
+        }
+
+        if ($event instanceof NavTreeSaved) {
+            // Navigation tree saved - this happens when nav items are reordered
+            // Since navigation appears on multiple pages, we purge everything by default
+            // If purge_everything_fallback is disabled, this will do nothing (intended behavior)
         }
 
         $urls = array_filter($urls);

@@ -11,6 +11,8 @@ use Statamic\Events\TermSaved;
 use Statamic\Events\TermDeleted;
 use Statamic\Events\AssetSaved;
 use Statamic\Events\AssetDeleted;
+use Statamic\Events\CollectionTreeSaved;
+use Statamic\Events\NavTreeSaved;
 
 class CloudflareCacheServiceProvider extends AddonServiceProvider
 {
@@ -35,6 +37,12 @@ class CloudflareCacheServiceProvider extends AddonServiceProvider
             PurgeCloudflareCache::class,
         ],
         AssetDeleted::class => [
+            PurgeCloudflareCache::class,
+        ],
+        CollectionTreeSaved::class => [
+            PurgeCloudflareCache::class,
+        ],
+        NavTreeSaved::class => [
             PurgeCloudflareCache::class,
         ],
     ];

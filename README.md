@@ -131,6 +131,8 @@ return [
         'term_deleted' => true,
         'asset_saved' => true,
         'asset_deleted' => true,
+        'collection_tree_saved' => true,
+        'nav_tree_saved' => true,
     ],
 
     // Dispatch purge jobs to the queue instead of running synchronously
