@@ -13,6 +13,8 @@ use Statamic\Events\AssetSaved;
 use Statamic\Events\AssetDeleted;
 use Statamic\Events\CollectionTreeSaved;
 use Statamic\Events\NavTreeSaved;
+use Statamic\Events\GlobalSetSaved;
+use Statamic\Events\GlobalSetDeleted;
 use Statamic\Facades\URL;
 use Illuminate\Support\Facades\Log; // Already present, but good to confirm
 
@@ -113,6 +115,8 @@ class PurgeCloudflareCache
             'Statamic\Events\AssetDeleted' => 'asset_deleted',
             'Statamic\Events\CollectionTreeSaved' => 'collection_tree_saved',
             'Statamic\Events\NavTreeSaved' => 'nav_tree_saved',
+            'Statamic\Events\GlobalSetSaved' => 'global_set_saved',
+            'Statamic\Events\GlobalSetDeleted' => 'global_set_deleted',
         ];
 
         $configKey = $eventMap[$eventClass] ?? null;
@@ -171,6 +175,12 @@ class PurgeCloudflareCache
             // Navigation tree saved - this happens when nav items are reordered
             // Since navigation appears on multiple pages, we purge everything by default
             // If purge_everything_fallback is disabled, this will do nothing (intended behavior)
+        }
+
+        if ($event instanceof GlobalSetSaved || $event instanceof GlobalSetDeleted) {
+            // Global sets can affect many pages (headers, footers, shared blocks, etc.).
+            // We intentionally do not return any URLs here so the listener follows the
+            // existing purge_everything_fallback logic (sync or queued).
         }
 
         $urls = array_filter($urls);

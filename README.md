@@ -75,6 +75,7 @@ Once configured, the addon will automatically purge the Cloudflare cache when co
 - Entry saved/deleted
 - Term saved/deleted
 - Asset saved/deleted
+- Global set saved/deleted (purges everything via `purge_everything_fallback`)
 
 You can configure which events trigger cache purging in the config file.
 
@@ -133,6 +134,8 @@ return [
         'asset_deleted' => true,
         'collection_tree_saved' => true,
         'nav_tree_saved' => true,
+        'global_set_saved' => true,
+        'global_set_deleted' => true,
     ],
 
     // Dispatch purge jobs to the queue instead of running synchronously
