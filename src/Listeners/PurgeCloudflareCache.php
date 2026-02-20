@@ -33,6 +33,11 @@ class PurgeCloudflareCache
     public function handle(Event $event): void
     {
         if (!config('cloudflare-cache.enabled')) {
+            if (config('cloudflare-cache.debug')) {
+                Log::debug('[Cloudflare Cache] Skipping purge because addon is disabled.', [
+                    'event' => get_class($event),
+                ]);
+            }
             return;
         }
 
@@ -112,16 +117,26 @@ class PurgeCloudflareCache
     {
         $useStatamicInvalidation = config('cloudflare-cache.use_statamic_static_cache_invalidation', false);
         $isStaticCacheInvalidationEvent = $event instanceof UrlInvalidated || $event instanceof StaticCacheCleared;
+        $eventClass = get_class($event);
 
         if ($useStatamicInvalidation && !$isStaticCacheInvalidationEvent) {
+            if (config('cloudflare-cache.debug')) {
+                Log::debug('[Cloudflare Cache] Skipping event because Statamic static cache invalidation mode is enabled and this is a legacy addon event.', [
+                    'event' => $eventClass,
+                ]);
+            }
             return false;
         }
 
         if (!$useStatamicInvalidation && $isStaticCacheInvalidationEvent) {
+            if (config('cloudflare-cache.debug')) {
+                Log::debug('[Cloudflare Cache] Skipping event because Statamic static cache invalidation mode is disabled.', [
+                    'event' => $eventClass,
+                ]);
+            }
             return false;
         }
 
-        $eventClass = get_class($event);
         $eventMap = [
             'Statamic\Events\EntrySaved' => 'entry_saved',
             'Statamic\Events\EntryDeleted' => 'entry_deleted',
@@ -139,7 +154,25 @@ class PurgeCloudflareCache
 
         $configKey = $eventMap[$eventClass] ?? null;
 
-        return $configKey && config("cloudflare-cache.purge_on.{$configKey}");
+        if (!$configKey) {
+            if (config('cloudflare-cache.debug')) {
+                Log::debug('[Cloudflare Cache] Skipping event because no purge_on mapping exists.', [
+                    'event' => $eventClass,
+                ]);
+            }
+            return false;
+        }
+
+        $shouldHandle = (bool) config("cloudflare-cache.purge_on.{$configKey}");
+
+        if (!$shouldHandle && config('cloudflare-cache.debug')) {
+            Log::debug('[Cloudflare Cache] Skipping event because purge_on setting is disabled.', [
+                'event' => $eventClass,
+                'config_key' => "cloudflare-cache.purge_on.{$configKey}",
+            ]);
+        }
+
+        return $shouldHandle;
     }
 
     /**

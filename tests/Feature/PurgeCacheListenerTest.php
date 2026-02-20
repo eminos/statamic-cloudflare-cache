@@ -15,6 +15,7 @@ use Statamic\Contracts\Entries\Collection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue; // Add Queue facade
+use Illuminate\Support\Facades\Log;
 use Eminos\StatamicCloudflareCache\Events\CachePurged;
 use Eminos\StatamicCloudflareCache\Jobs\PurgeCloudflareCacheJob;
 use Mockery;
@@ -440,6 +441,57 @@ class PurgeCacheListenerTest extends TestCase
         $clientMock = $this->mock(Client::class);
         $clientMock->shouldNotReceive('purgeEverything');
         $clientMock->shouldNotReceive('purgeUrls');
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Queue::assertNothingPushed();
+    }
+
+    #[Test]
+    public function it_logs_when_legacy_event_is_skipped_in_statamic_static_cache_invalidation_mode()
+    {
+        config([
+            'cloudflare-cache.use_statamic_static_cache_invalidation' => true,
+            'cloudflare-cache.debug' => true,
+        ]);
+
+        Log::shouldReceive('debug')->once()->withArgs(function ($message, $context = []) {
+            return str_contains($message, 'Statamic static cache invalidation mode is enabled')
+                && ($context['event'] ?? null) === EntrySaved::class;
+        });
+
+        $entry = $this->mockEntry();
+        $event = new EntrySaved($entry);
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldNotReceive('purgeUrls');
+        $clientMock->shouldNotReceive('purgeEverything');
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Queue::assertNothingPushed();
+    }
+
+    #[Test]
+    public function it_logs_when_static_cache_event_is_skipped_while_mode_is_disabled()
+    {
+        config([
+            'cloudflare-cache.use_statamic_static_cache_invalidation' => false,
+            'cloudflare-cache.debug' => true,
+        ]);
+
+        Log::shouldReceive('debug')->once()->withArgs(function ($message, $context = []) {
+            return str_contains($message, 'Statamic static cache invalidation mode is disabled')
+                && ($context['event'] ?? null) === UrlInvalidated::class;
+        });
+
+        $event = new UrlInvalidated('/test-entry', 'https://example.com');
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldNotReceive('purgeUrls');
+        $clientMock->shouldNotReceive('purgeEverything');
 
         $listener = $this->app->make(PurgeCloudflareCache::class);
         $listener->handle($event);
