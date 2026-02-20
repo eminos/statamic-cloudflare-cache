@@ -2,6 +2,7 @@
 
 namespace Eminos\StatamicCloudflareCache\Listeners;
 
+use Eminos\StatamicCloudflareCache\Events\CachePurged;
 use Eminos\StatamicCloudflareCache\Jobs\PurgeCloudflareCacheJob; // Updated job import namespace
 use Eminos\StatamicCloudflareCache\Http\Client; // Updated client import namespace
 use Statamic\Events\Event;
@@ -86,6 +87,7 @@ class PurgeCloudflareCache
                 Log::debug('[Cloudflare Cache] Synchronously purging URLs: ' . implode(', ', $urls));
             }
             $this->client->purgeUrls($urls);
+            event(new CachePurged($urls, false));
             return;
         }
 
@@ -94,6 +96,7 @@ class PurgeCloudflareCache
                 Log::debug('[Cloudflare Cache] Synchronously purging everything.');
             }
             $this->client->purgeEverything();
+            event(new CachePurged([], true));
         }
     }
 

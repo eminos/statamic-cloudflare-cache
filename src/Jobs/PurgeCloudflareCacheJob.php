@@ -2,6 +2,7 @@
 
 namespace Eminos\StatamicCloudflareCache\Jobs;
 
+use Eminos\StatamicCloudflareCache\Events\CachePurged;
 use Eminos\StatamicCloudflareCache\Http\Client;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -39,11 +40,13 @@ class PurgeCloudflareCacheJob implements ShouldQueue
                     Log::debug('[Cloudflare Cache] Queued job purging everything.');
                 }
                 $client->purgeEverything();
+                event(new CachePurged([], true));
             } elseif (! empty($this->urls)) {
                 if (config('cloudflare-cache.debug')) {
                     Log::debug('[Cloudflare Cache] Queued job purging URLs: ' . implode(', ', $this->urls));
                 }
                 $client->purgeUrls($this->urls);
+                event(new CachePurged($this->urls, false));
             } else {
                 // This case should ideally not happen if dispatched correctly (null vs empty array)
                 // but we log it just in case.
