@@ -7,6 +7,7 @@ Automatically purge your Cloudflare cache when content changes in Statamic.
 - Automatically purges Cloudflare cache when Statamic content changes.
 - **Multi-zone support** for Statamic multisite installations with different domains.
 - Configurable events that trigger cache purging.
+- Optional support for Statamic `static_caching` invalidation rules via `UrlInvalidated`/`StaticCacheCleared` events.
 - Optional queuing of purge jobs for background processing.
 - CLI command for manual cache purging.
 - Simple configuration with backward compatibility.
@@ -136,7 +137,12 @@ return [
         'nav_tree_saved' => true,
         'global_set_saved' => true,
         'global_set_deleted' => true,
+        'url_invalidated' => true,
+        'static_cache_cleared' => true,
     ],
+
+    // Use Statamic static cache invalidation events instead of direct content events
+    'use_statamic_static_cache_invalidation' => env('CLOUDFLARE_CACHE_USE_STATAMIC_STATIC_CACHE_INVALIDATION', false),
 
     // Dispatch purge jobs to the queue instead of running synchronously
     'queue_purge' => env('CLOUDFLARE_CACHE_QUEUE_PURGE', false),

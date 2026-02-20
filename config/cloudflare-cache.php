@@ -47,7 +47,11 @@ return [
         'nav_tree_saved' => true,
         'global_set_saved' => true,
         'global_set_deleted' => true,
+        'url_invalidated' => true,
+        'static_cache_cleared' => true,
     ],
+
+    'use_statamic_static_cache_invalidation' => env('CLOUDFLARE_CACHE_USE_STATAMIC_STATIC_CACHE_INVALIDATION', false),
 
     'queue_purge' => env('CLOUDFLARE_CACHE_QUEUE_PURGE', false), // Dispatch purge jobs to the queue
     

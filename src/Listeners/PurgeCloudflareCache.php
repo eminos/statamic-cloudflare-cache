@@ -16,6 +16,8 @@ use Statamic\Events\CollectionTreeSaved;
 use Statamic\Events\NavTreeSaved;
 use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\GlobalSetDeleted;
+use Statamic\Events\UrlInvalidated;
+use Statamic\Events\StaticCacheCleared;
 use Statamic\Facades\URL;
 use Illuminate\Support\Facades\Log; // Already present, but good to confirm
 
@@ -108,6 +110,17 @@ class PurgeCloudflareCache
      */
     protected function shouldHandleEvent(Event $event): bool
     {
+        $useStatamicInvalidation = config('cloudflare-cache.use_statamic_static_cache_invalidation', false);
+        $isStaticCacheInvalidationEvent = $event instanceof UrlInvalidated || $event instanceof StaticCacheCleared;
+
+        if ($useStatamicInvalidation && !$isStaticCacheInvalidationEvent) {
+            return false;
+        }
+
+        if (!$useStatamicInvalidation && $isStaticCacheInvalidationEvent) {
+            return false;
+        }
+
         $eventClass = get_class($event);
         $eventMap = [
             'Statamic\Events\EntrySaved' => 'entry_saved',
@@ -120,6 +133,8 @@ class PurgeCloudflareCache
             'Statamic\Events\NavTreeSaved' => 'nav_tree_saved',
             'Statamic\Events\GlobalSetSaved' => 'global_set_saved',
             'Statamic\Events\GlobalSetDeleted' => 'global_set_deleted',
+            'Statamic\Events\UrlInvalidated' => 'url_invalidated',
+            'Statamic\Events\StaticCacheCleared' => 'static_cache_cleared',
         ];
 
         $configKey = $eventMap[$eventClass] ?? null;
@@ -184,6 +199,10 @@ class PurgeCloudflareCache
             // Global sets can affect many pages (headers, footers, shared blocks, etc.).
             // We intentionally do not return any URLs here so the listener follows the
             // existing purge_everything_fallback logic (sync or queued).
+        }
+
+        if ($event instanceof UrlInvalidated && $event->url) {
+            $urls[] = URL::makeAbsolute($event->url);
         }
 
         $urls = array_filter($urls);

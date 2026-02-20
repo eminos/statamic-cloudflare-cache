@@ -15,6 +15,8 @@ use Statamic\Events\CollectionTreeSaved;
 use Statamic\Events\NavTreeSaved;
 use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\GlobalSetDeleted;
+use Statamic\Events\UrlInvalidated;
+use Statamic\Events\StaticCacheCleared;
 
 class CloudflareCacheServiceProvider extends AddonServiceProvider
 {
@@ -51,6 +53,12 @@ class CloudflareCacheServiceProvider extends AddonServiceProvider
             PurgeCloudflareCache::class,
         ],
         GlobalSetDeleted::class => [
+            PurgeCloudflareCache::class,
+        ],
+        UrlInvalidated::class => [
+            PurgeCloudflareCache::class,
+        ],
+        StaticCacheCleared::class => [
             PurgeCloudflareCache::class,
         ],
     ];
