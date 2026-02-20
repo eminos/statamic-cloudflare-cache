@@ -10,8 +10,10 @@ use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\GlobalSetDeleted;
 use Statamic\Contracts\Entries\Entry;
 use Statamic\Contracts\Entries\Collection;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue; // Add Queue facade
+use Eminos\StatamicCloudflareCache\Events\CachePurged;
 use Eminos\StatamicCloudflareCache\Jobs\PurgeCloudflareCacheJob;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -308,5 +310,49 @@ class PurgeCacheListenerTest extends TestCase
 
         Queue::assertNothingPushed();
         Http::assertNothingSent();
+    }
+
+    #[Test]
+    public function it_fires_cache_purged_event_after_synchronous_purge_with_urls()
+    {
+        Event::fake();
+        config(['cloudflare-cache.queue_purge' => false]);
+
+        $entry = $this->mockEntry('http://test.com/entry', 'http://test.com/collection');
+        $event = new EntrySaved($entry);
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldReceive('purgeUrls')->once();
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Event::assertDispatched(CachePurged::class, function ($e) {
+            return !$e->purgedEverything && count($e->urls) > 0;
+        });
+    }
+
+    #[Test]
+    public function it_fires_cache_purged_event_after_synchronous_purge_everything()
+    {
+        Event::fake();
+        config([
+            'cloudflare-cache.queue_purge' => false,
+            'cloudflare-cache.purge_urls' => false,
+            'cloudflare-cache.purge_everything_fallback' => true,
+        ]);
+
+        $entry = $this->mockEntry();
+        $event = new EntrySaved($entry);
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldReceive('purgeEverything')->once();
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Event::assertDispatched(CachePurged::class, function ($e) {
+            return $e->purgedEverything && empty($e->urls);
+        });
     }
 }

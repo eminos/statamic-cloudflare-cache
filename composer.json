@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": "^8.0",
-        "statamic/cms": "^5.0"
+        "statamic/cms": "^5.0|^6.0"
     },
     "require-dev": {
         "pestphp/pest": "^3.0",
