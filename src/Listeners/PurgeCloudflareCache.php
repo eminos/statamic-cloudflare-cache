@@ -16,6 +16,8 @@ use Statamic\Events\CollectionTreeSaved;
 use Statamic\Events\NavTreeSaved;
 use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\GlobalSetDeleted;
+use Statamic\Events\GlobalVariablesSaved;
+use Statamic\Events\GlobalVariablesDeleted;
 use Statamic\Events\UrlInvalidated;
 use Statamic\Events\StaticCacheCleared;
 use Statamic\Facades\URL;
@@ -148,6 +150,8 @@ class PurgeCloudflareCache
             'Statamic\Events\NavTreeSaved' => 'nav_tree_saved',
             'Statamic\Events\GlobalSetSaved' => 'global_set_saved',
             'Statamic\Events\GlobalSetDeleted' => 'global_set_deleted',
+            'Statamic\Events\GlobalVariablesSaved' => 'global_variables_saved',
+            'Statamic\Events\GlobalVariablesDeleted' => 'global_variables_deleted',
             'Statamic\Events\UrlInvalidated' => 'url_invalidated',
             'Statamic\Events\StaticCacheCleared' => 'static_cache_cleared',
         ];
@@ -232,6 +236,13 @@ class PurgeCloudflareCache
             // Global sets can affect many pages (headers, footers, shared blocks, etc.).
             // We intentionally do not return any URLs here so the listener follows the
             // existing purge_everything_fallback logic (sync or queued).
+        }
+
+        if ($event instanceof GlobalVariablesSaved || $event instanceof GlobalVariablesDeleted) {
+            // Editing a global set's values in the control panel saves the site's
+            // Variables rather than the GlobalSet, so only these events fire
+            // (always on Statamic 6, and for localisations on Statamic 5).
+            // Same reasoning as above: purge everything.
         }
 
         if ($event instanceof UrlInvalidated && $event->url) {

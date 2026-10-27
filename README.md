@@ -77,6 +77,7 @@ Once configured, the addon will automatically purge the Cloudflare cache when co
 - Term saved/deleted
 - Asset saved/deleted
 - Global set saved/deleted (purges everything via `purge_everything_fallback`)
+- Global variables saved/deleted, i.e. a global set's values edited in the control panel (purges everything via `purge_everything_fallback`)
 
 You can configure which events trigger cache purging in the config file.
 
@@ -142,6 +143,8 @@ return [
         'nav_tree_saved' => true,
         'global_set_saved' => true,
         'global_set_deleted' => true,
+        'global_variables_saved' => true, // Global set values edited in the control panel
+        'global_variables_deleted' => true,
         'url_invalidated' => true, // Statamic Static Cache: UrlInvalidated event
         'static_cache_cleared' => true, // Statamic Static Cache: StaticCacheCleared event
     ],
