@@ -77,8 +77,20 @@ Once configured, the addon will automatically purge the Cloudflare cache when co
 - Term saved/deleted
 - Asset saved/deleted
 - Global set saved/deleted (purges everything via `purge_everything_fallback`)
+- Global variables saved/deleted on Statamic 6, i.e. a global set's values edited in the control panel (purges everything via `purge_everything_fallback`)
 
 You can configure which events trigger cache purging in the config file.
+
+On Statamic 5, global value edits use the global-set events to avoid duplicate purges.
+
+When upgrading with a previously published config, add these keys to its `purge_on` array:
+
+```php
+'global_variables_saved' => true,
+'global_variables_deleted' => true,
+```
+
+These events require `purge_everything_fallback` to be enabled, since global values can affect any page. If Laravel configuration is cached, rebuild it after changing the config.
 
 #### Event handling modes (either/or)
 
@@ -142,6 +154,8 @@ return [
         'nav_tree_saved' => true,
         'global_set_saved' => true,
         'global_set_deleted' => true,
+        'global_variables_saved' => true, // Global set values edited in the control panel
+        'global_variables_deleted' => true,
         'url_invalidated' => true, // Statamic Static Cache: UrlInvalidated event
         'static_cache_cleared' => true, // Statamic Static Cache: StaticCacheCleared event
     ],

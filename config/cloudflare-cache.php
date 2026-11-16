@@ -47,6 +47,8 @@ return [
         'nav_tree_saved' => true,
         'global_set_saved' => true,
         'global_set_deleted' => true,
+        'global_variables_saved' => true, // Global set values edited in the control panel
+        'global_variables_deleted' => true,
         'url_invalidated' => true, // Statamic Static Cache: UrlInvalidated event
         'static_cache_cleared' => true, // Statamic Static Cache: StaticCacheCleared event
     ],

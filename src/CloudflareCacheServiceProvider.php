@@ -2,6 +2,7 @@
 
 namespace Eminos\StatamicCloudflareCache;
 
+use Composer\InstalledVersions;
 use Statamic\Providers\AddonServiceProvider;
 use Eminos\StatamicCloudflareCache\Commands\PurgeCache;
 use Eminos\StatamicCloudflareCache\Listeners\PurgeCloudflareCache;
@@ -15,6 +16,8 @@ use Statamic\Events\CollectionTreeSaved;
 use Statamic\Events\NavTreeSaved;
 use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\GlobalSetDeleted;
+use Statamic\Events\GlobalVariablesSaved;
+use Statamic\Events\GlobalVariablesDeleted;
 use Statamic\Events\UrlInvalidated;
 use Statamic\Events\StaticCacheCleared;
 
@@ -55,6 +58,12 @@ class CloudflareCacheServiceProvider extends AddonServiceProvider
         GlobalSetDeleted::class => [
             PurgeCloudflareCache::class,
         ],
+        GlobalVariablesSaved::class => [
+            PurgeCloudflareCache::class,
+        ],
+        GlobalVariablesDeleted::class => [
+            PurgeCloudflareCache::class,
+        ],
         UrlInvalidated::class => [
             PurgeCloudflareCache::class,
         ],
@@ -82,6 +91,12 @@ class CloudflareCacheServiceProvider extends AddonServiceProvider
      */
     public function boot(): void
     {
+        // Statamic 5 saves variables through the parent global set, firing both
+        // event families. Its existing global-set listeners already purge once.
+        if (version_compare(InstalledVersions::getVersion('statamic/cms'), '6.0.0', '<')) {
+            unset($this->listen[GlobalVariablesSaved::class], $this->listen[GlobalVariablesDeleted::class]);
+        }
+
         parent::boot();
 
         if ($this->app->runningInConsole()) {

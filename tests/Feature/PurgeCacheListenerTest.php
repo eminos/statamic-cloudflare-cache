@@ -8,6 +8,8 @@ use Eminos\StatamicCloudflareCache\Listeners\PurgeCloudflareCache;
 use Statamic\Events\EntrySaved;
 use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\GlobalSetDeleted;
+use Statamic\Events\GlobalVariablesSaved;
+use Statamic\Events\GlobalVariablesDeleted;
 use Statamic\Events\UrlInvalidated;
 use Statamic\Events\StaticCacheCleared;
 use Statamic\Contracts\Entries\Entry;
@@ -290,6 +292,108 @@ class PurgeCacheListenerTest extends TestCase
 
             return is_null($urls) && $purgeEverything;
         });
+    }
+
+    #[Test]
+    public function it_purges_everything_synchronously_when_global_variables_are_saved_and_queue_disabled()
+    {
+        config([
+            'cloudflare-cache.queue_purge' => false,
+            'cloudflare-cache.purge_everything_fallback' => true,
+            'cloudflare-cache.purge_urls' => true,
+            'cloudflare-cache.purge_on.global_variables_saved' => true,
+        ]);
+
+        $variables = $this->mockGlobals();
+        $event = new GlobalVariablesSaved($variables);
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldReceive('purgeEverything')->once();
+        $clientMock->shouldNotReceive('purgeUrls');
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Queue::assertNothingPushed();
+    }
+
+    #[Test]
+    public function it_purges_everything_synchronously_when_global_variables_are_deleted_and_queue_disabled()
+    {
+        config([
+            'cloudflare-cache.queue_purge' => false,
+            'cloudflare-cache.purge_everything_fallback' => true,
+            'cloudflare-cache.purge_urls' => true,
+            'cloudflare-cache.purge_on.global_variables_deleted' => true,
+        ]);
+
+        $variables = $this->mockGlobals();
+        $event = new GlobalVariablesDeleted($variables);
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldReceive('purgeEverything')->once();
+        $clientMock->shouldNotReceive('purgeUrls');
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Queue::assertNothingPushed();
+    }
+
+    #[Test]
+    public function it_dispatches_purge_everything_job_when_global_variables_are_saved_and_queue_enabled()
+    {
+        config([
+            'cloudflare-cache.queue_purge' => true,
+            'cloudflare-cache.purge_everything_fallback' => true,
+            'cloudflare-cache.purge_urls' => true,
+            'cloudflare-cache.purge_on.global_variables_saved' => true,
+        ]);
+
+        $variables = $this->mockGlobals();
+        $event = new GlobalVariablesSaved($variables);
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldNotReceive('purgeUrls');
+        $clientMock->shouldNotReceive('purgeEverything');
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Queue::assertPushed(PurgeCloudflareCacheJob::class, function ($job) {
+            $reflection = new \ReflectionClass($job);
+            $urlsProp = $reflection->getProperty('urls');
+            $urlsProp->setAccessible(true);
+            $urls = $urlsProp->getValue($job);
+
+            $purgeEverythingProp = $reflection->getProperty('purgeEverything');
+            $purgeEverythingProp->setAccessible(true);
+            $purgeEverything = $purgeEverythingProp->getValue($job);
+
+            return is_null($urls) && $purgeEverything;
+        });
+    }
+
+    #[Test]
+    public function it_does_not_purge_when_global_variables_saved_event_is_disabled_in_config()
+    {
+        config([
+            'cloudflare-cache.queue_purge' => false,
+            'cloudflare-cache.purge_everything_fallback' => true,
+            'cloudflare-cache.purge_on.global_variables_saved' => false,
+        ]);
+
+        $variables = $this->mockGlobals();
+        $event = new GlobalVariablesSaved($variables);
+
+        $clientMock = $this->mock(Client::class);
+        $clientMock->shouldNotReceive('purgeUrls');
+        $clientMock->shouldNotReceive('purgeEverything');
+
+        $listener = $this->app->make(PurgeCloudflareCache::class);
+        $listener->handle($event);
+
+        Queue::assertNothingPushed();
     }
 
     #[Test]
