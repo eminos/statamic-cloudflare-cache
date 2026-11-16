@@ -2,6 +2,7 @@
 
 namespace Eminos\StatamicCloudflareCache;
 
+use Composer\InstalledVersions;
 use Statamic\Providers\AddonServiceProvider;
 use Eminos\StatamicCloudflareCache\Commands\PurgeCache;
 use Eminos\StatamicCloudflareCache\Listeners\PurgeCloudflareCache;
@@ -90,6 +91,12 @@ class CloudflareCacheServiceProvider extends AddonServiceProvider
      */
     public function boot(): void
     {
+        // Statamic 5 saves variables through the parent global set, firing both
+        // event families. Its existing global-set listeners already purge once.
+        if (version_compare(InstalledVersions::getVersion('statamic/cms'), '6.0.0', '<')) {
+            unset($this->listen[GlobalVariablesSaved::class], $this->listen[GlobalVariablesDeleted::class]);
+        }
+
         parent::boot();
 
         if ($this->app->runningInConsole()) {

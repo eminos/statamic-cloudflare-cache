@@ -240,8 +240,8 @@ class PurgeCloudflareCache
 
         if ($event instanceof GlobalVariablesSaved || $event instanceof GlobalVariablesDeleted) {
             // Editing a global set's values in the control panel saves the site's
-            // Variables rather than the GlobalSet, so only these events fire
-            // (always on Statamic 6, and for localisations on Statamic 5).
+            // Variables rather than the GlobalSet on Statamic 6.
+            // Statamic 5 uses the existing GlobalSet listeners to avoid duplicates.
             // Same reasoning as above: purge everything.
         }
 
